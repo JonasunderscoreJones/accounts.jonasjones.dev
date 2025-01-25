@@ -1,0 +1,12 @@
+name = "accounts-jonasjones-dev"
+main = "src/index.js"
+compatibility_date = "2025-01-09"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "accounts"
+database_id = "c3dbeee9-9160-4ab2-b1bc-a5707bb791c5"
