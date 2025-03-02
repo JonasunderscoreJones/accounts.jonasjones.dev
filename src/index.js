@@ -214,17 +214,14 @@ async function hashPassword(password) {
 	const data = encoder.encode(password);
 
 	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-	return bufferToHex(hashBuffer);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+	return hashHex;
 }
 
-async function verifyPassword(password, storedHash) {
-	const hash = await hashPassword(password);
-	return hash === storedHash;
-}
-
-function bufferToHex(buffer) {
-	const byteArray = new Uint8Array(buffer);
-	return Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('');
+async function verifyPassword(password, hash) {
+	const hashedPassword = await hashPassword(password);
+	return hashedPassword === hash;
 }
 
 function formatDate(date) {
