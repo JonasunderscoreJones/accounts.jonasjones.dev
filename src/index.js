@@ -97,10 +97,10 @@ async function handleLogin(request, env) {
 }
 
 async function handleRegister(request, env) {
-	const { username, password, email, first_name, last_name } = await request.json();
+	const { username, password, email, firstname, lastname } = await request.json();
 	const db = env.DB;
 
-	if (!username || !password, !email || !first_name || !last_name) {
+	if (!username || !password, !email || !firstname || !lastname) {
 		return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
@@ -114,7 +114,7 @@ async function handleRegister(request, env) {
 		VALUES (?, ?, ?, ?, ?, ?);
 	  `;
 	  const created = formatDate(new Date());
-	  await db.prepare(insertUser).bind(created, username, passwordHash, email, first_name, last_name).run();
+	  await db.prepare(insertUser).bind(created, username, passwordHash, email, firstname, lastname).run();
 
 	  return new Response('User registered successfully.', { status: 201, headers: corsAccessControlAllowOrigin(request) });
 	} catch (error) {
