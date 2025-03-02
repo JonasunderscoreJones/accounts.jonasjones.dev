@@ -1,3 +1,19 @@
+function corsAccessControlAllowOrigin(request) {
+	if (!request.headers.get('origin')) {
+		return headersCORS
+	}
+	console.log("domain: ", request.headers.get('origin'))
+	const url = new URL(request.headers.get('origin'))
+	const { host } = url
+	if (['localhost:5173'].includes(host)) {
+		let corsHeaders = headersCORS
+		corsHeaders['Access-Control-Allow-Origin'] = host
+		console.log(corsHeaders)
+		return corsHeaders
+	}
+	return headersCORS
+}
+
 const headersCORS = {
 	'Access-Control-Allow-Origin': 'https://dash.jonasjones.dev',
 	'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -11,7 +27,7 @@ export default {
 	  const { pathname } = url;
 
 	if (request.method === 'OPTIONS') {
-		return new Response(null, { status: 200, headers: headersCORS });
+		return new Response(null, { status: 200, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	  // Router
@@ -34,7 +50,7 @@ export default {
 	  } else if (pathname === '/session' && request.method === 'GET') {
 		return sessionHealthCheck(request, env);
 	  } else {
-		return new Response('Not Found', { status: 404, headers: headersCORS });
+		return new Response('Not Found', { status: 404, headers: corsAccessControlAllowOrigin(request) });
 	  }
 	},
 };
@@ -45,7 +61,7 @@ async function handleLogin(request, env) {
 	const db = env.DB;
 
 	if (!email || !password) {
-		return new Response('Bad Request', { status: 400, headers: headersCORS });
+		return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	// Check user exists and validate password
@@ -55,12 +71,12 @@ async function handleLogin(request, env) {
 	const user = await db.prepare(userQuery).bind(email).first();
 
 	if (!user || !user.is_active) {
-	  return new Response('Invalid email or account inactive.', { status: 403, headers: headersCORS });
+	  return new Response('Invalid email or account inactive.', { status: 403, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	const validPassword = await verifyPassword(password, user.passwordhash);
 	if (!validPassword) {
-	  return new Response('Invalid credentials.', { status: 403, headers: headersCORS });
+	  return new Response('Invalid credentials.', { status: 403, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	// Create session
@@ -77,7 +93,7 @@ async function handleLogin(request, env) {
 	`;
 	await db.prepare(sessionInsert).bind(created, expiration, user.id, sessionKey).run();
 
-	return new Response(JSON.stringify({ sessionKey, expiration }), { status: 200, headers: headersCORS });
+	return new Response(JSON.stringify({ sessionKey, expiration }), { status: 200, headers: corsAccessControlAllowOrigin(request) });
 }
 
 async function handleRegister(request, env) {
@@ -85,7 +101,7 @@ async function handleRegister(request, env) {
 	const db = env.DB;
 
 	if (!username || !password, !email || !first_name || !last_name) {
-		return new Response('Bad Request', { status: 400, headers: headersCORS });
+		return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	// Hash password
@@ -100,13 +116,13 @@ async function handleRegister(request, env) {
 	  const created = formatDate(new Date());
 	  await db.prepare(insertUser).bind(created, username, passwordHash, email, first_name, last_name).run();
 
-	  return new Response('User registered successfully.', { status: 201, headers: headersCORS });
+	  return new Response('User registered successfully.', { status: 201, headers: corsAccessControlAllowOrigin(request) });
 	} catch (error) {
 	  if (error.message.includes('UNIQUE')) {
-		return new Response('Username or email already exists.', { status: 409, headers: headersCORS });
+		return new Response('Username or email already exists.', { status: 409, headers: corsAccessControlAllowOrigin(request) });
 	  }
 	  console.log(error.message)
-	  return new Response('Error registering user.', { status: 500, headers: headersCORS });
+	  return new Response('Error registering user.', { status: 500, headers: corsAccessControlAllowOrigin(request) });
 	}
 }
 
@@ -119,13 +135,13 @@ async function handleLogout(request, env) {
 	`;
 	await db.prepare(deleteSession).bind(sessionKey).run();
 
-	return new Response('Logged out successfully.', { status: 200, headers: headersCORS });
+	return new Response('Logged out successfully.', { status: 200, headers: corsAccessControlAllowOrigin(request) });
 }
 
 async function getAccountData(request, env) {
 	const sessionKey = request.headers.get('Authorization')?.replace('Bearer ', '');
 	if (!sessionKey) {
-	  return new Response('Bad Request', { status: 400, headers: headersCORS });
+	  return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	const db = env.DB;
@@ -139,10 +155,10 @@ async function getAccountData(request, env) {
 	const account = await db.prepare(accountQuery).bind(sessionKey).first();
 
 	if (!account) {
-	  return new Response('Unauthorized', { status: 401, headers: headersCORS });
+	  return new Response('Unauthorized', { status: 401, headers: corsAccessControlAllowOrigin(request) });
 	}
 
-	return new Response(JSON.stringify(account), { status: 200, headers: headersCORS });
+	return new Response(JSON.stringify(account), { status: 200, headers: corsAccessControlAllowOrigin(request) });
 }
 
 async function updateAccountData(request, env) {
@@ -151,7 +167,7 @@ async function updateAccountData(request, env) {
 	const db = env.DB;
 
 	if (!username || !email || !first_name || !last_name || !password) {
-		return new Response('Bad Request', { status: 400, headers: headersCORS });
+		return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	const passwordHash = await hashPassword(password);
@@ -165,13 +181,13 @@ async function updateAccountData(request, env) {
 	`;
 	await db.prepare(updateAccount).bind(username, passwordHash, email, first_name, last_name, sessionKey).run();
 
-	return new Response('Account updated successfully.', { status: 200, headers: headersCORS });
+	return new Response('Account updated successfully.', { status: 200, headers: corsAccessControlAllowOrigin(request) });
 }
 
 async function sessionHealthCheck(request, env) {
 	const sessionKey = request.headers.get('Authorization')?.replace('Bearer ', '');
 	if (!sessionKey) {
-	  return new Response('Bad Request', { status: 400, headers: headersCORS });
+	  return new Response('Bad Request', { status: 400, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	const db = env.DB;
@@ -182,14 +198,14 @@ async function sessionHealthCheck(request, env) {
 	const session = await db.prepare(sessionQuery).bind(sessionKey).first();
 
 	if (!session) {
-		return new Response(JSON.stringify({ valid: false, error: 'Invalid sessionKey.' }), { status: 401, headers: headersCORS });
+		return new Response(JSON.stringify({ valid: false, error: 'Invalid sessionKey.' }), { status: 401, headers: corsAccessControlAllowOrigin(request) });
 	}
 
 	if (new Date(session.expiration) < new Date()) {
-		return new Response(JSON.stringify({ valid: false, error: 'Session expired.' }), { status: 401, headers: headersCORS });
+		return new Response(JSON.stringify({ valid: false, error: 'Session expired.' }), { status: 401, headers: corsAccessControlAllowOrigin(request) });
 	}
 
-	return new Response(JSON.stringify({ valid: true, userId: session.userid }), { status: 200, headers: headersCORS });
+	return new Response(JSON.stringify({ valid: true, userId: session.userid }), { status: 200, headers: corsAccessControlAllowOrigin(request) });
 }
 
 // Utility functions
