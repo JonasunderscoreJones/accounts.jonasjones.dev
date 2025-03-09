@@ -56,8 +56,9 @@ export default {
 };
 
 // Helpers
-async function handleLogin(request, env) {
-	const { email, password } = await request.json();
+async function handleLogin(request, env, data = null) {
+	// If no data is passed, parse the request JSON
+	const { email, password } = data || await request.json();
 	const db = env.DB;
 
 	if (!email || !password) {
@@ -97,7 +98,8 @@ async function handleLogin(request, env) {
 }
 
 async function handleRegister(request, env) {
-	const { username, password, email, firstname, lastname } = await request.json();
+	const data = await request.json(); // Read the body once
+	const { username, password, email, firstname, lastname } = data;
 	const db = env.DB;
 
 	if (!username || !password, !email || !firstname || !lastname) {
@@ -116,7 +118,7 @@ async function handleRegister(request, env) {
 	  const created = formatDate(new Date());
 	  await db.prepare(insertUser).bind(created, username, passwordHash, email, firstname, lastname).run();
 
-	  return new Response('User registered successfully.', { status: 201, headers: corsAccessControlAllowOrigin(request) });
+	  return handleLogin(request, env, data);
 	} catch (error) {
 	  if (error.message.includes('UNIQUE')) {
 		return new Response('Username or email already exists.', { status: 409, headers: corsAccessControlAllowOrigin(request) });
